@@ -220,6 +220,11 @@ def build_parser():
                         'Can also be defined via environment variable '
                         'WALE_GS_PREFIX.')
 
+    parser.add_argument('--b2-prefix',
+                        help='B2 prefix to run all commands against. '
+                             'Can also be defined via environment variable '
+                             'WALE_B2_PREFIX.')
+
     parser.add_argument('--file-prefix',
                         help='File prefix to run all commands against.  '
                         'Can also be defined via environment variable '
@@ -454,11 +459,13 @@ def configure_backup_cxt(args):
               or args.gs_prefix
               or args.s3_prefix
               or args.wabs_prefix
+              or args.b2_prefix
               or os.getenv('WALE_FILE_PREFIX')
               or os.getenv('WALE_GS_PREFIX')
               or os.getenv('WALE_S3_PREFIX')
               or os.getenv('WALE_SWIFT_PREFIX')
-              or os.getenv('WALE_WABS_PREFIX'))
+              or os.getenv('WALE_WABS_PREFIX')
+              or os.getenv('WALE_B2_PREFIX'))
 
     if prefix is None:
         raise UserException(
@@ -468,13 +475,15 @@ def configure_backup_cxt(args):
                 ' --file-prefix,'
                 ' --gs-prefix,'
                 ' --s3-prefix or'
-                ' --wabs-prefix options'
+                ' --wabs-prefix or'
+                ' --b2-prefix options'
                 ' or define one of the'
                 ' WALE_FILE_PREFIX,'
                 ' WALE_GS_PREFIX,'
                 ' WALE_S3_PREFIX,'
                 ' WALE_SWIFT_PREFIX or'
-                ' WALE_WABS_PREFIX,'
+                ' WALE_WABS_PREFIX or'
+                ' WALE_B2_PREFIX'
                 ' environment variables.'
             )
         )
@@ -553,6 +562,11 @@ def configure_backup_cxt(args):
     elif store.is_gs:
         from wal_e.operator.gs_operator import GSBackup
         return GSBackup(store, gpg_key_id)
+    elif store.is_b2:
+        from wal_e.blobstore import b2
+        from wal_e.operator.b2_operator import B2Backup
+        creds = b2.Credentials(os.getenv('B2_ACCOUNT_ID'), os.getenv('B2_ACCESS_KEY'))
+        return B2Backup(store, creds, gpg_key_id)
     elif store.is_file:
         from wal_e.blobstore import file
         from wal_e.operator.file_operator import FileBackup
@@ -567,6 +581,8 @@ def configure_backup_cxt(args):
 
 def monkeypatch_tarfile_copyfileobj():
     """Monkey-patch tarfile.copyfileobj to exploit large buffers"""
+    if (sys.version_info.major * 10 + sys.version_info.minor) >= 36:
+        return
     import tarfile
     from wal_e import copyfileobj
 

@@ -117,7 +117,7 @@ class SegmentNumber(collections.namedtuple('SegmentNumber',
 
 OBSOLETE_VERSIONS = frozenset(('004', '003', '002', '001', '000'))
 
-SUPPORTED_STORE_SCHEMES = ('s3', 'wabs', 'swift', 'gs', 'file')
+SUPPORTED_STORE_SCHEMES = ('s3', 'wabs', 'swift', 'gs', 'b2', 'file')
 
 
 # Exhaustively enumerates all possible metadata about a backup.  These
@@ -223,9 +223,9 @@ class StorageLayout(object):
         if url_tup.scheme not in SUPPORTED_STORE_SCHEMES:
             raise wal_e.exception.UserException(
                 msg='bad S3, Windows Azure Blob Storage, OpenStack Swift,'
-                    ' Google Cloud Storage or File URL scheme passed',
+                    ' Google Cloud Storage, Backblaze B2 or File URL scheme passed',
                 detail='The scheme {0} was passed when "s3", "wabs",'
-                       ' "swift", "gs", or "file" was expected.'
+                       ' "swift", "gs", "b2", or "file" was expected.'
                        ''.format(url_tup.scheme))
 
         for scheme in SUPPORTED_STORE_SCHEMES:
@@ -331,6 +331,9 @@ def get_backup_info(layout, **kwargs):
     elif layout.is_gs:
         from wal_e.storage.gs_storage import GSBackupInfo
         bi = GSBackupInfo(**kwargs)
+    elif layout.is_b2:
+        from wal_e.storage.b2_storage import B2BackupInfo
+        bi = B2BackupInfo(**kwargs)
     elif layout.is_file:
         from wal_e.storage.file_storage import FileBackupInfo
         bi = FileBackupInfo(**kwargs)

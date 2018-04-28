@@ -15,6 +15,9 @@ def get_blobstore(layout):
     elif layout.is_gs:
         from wal_e.blobstore import gs
         blobstore = gs
+    elif layout.is_b2:
+        from wal_e.blobstore import b2
+        blobstore = b2
     elif layout.is_file:
         from wal_e.blobstore import file
         blobstore = file
